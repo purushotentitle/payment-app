@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_NAME    = 'payment-service'
         VERSION     = '1.0.0'
-        IMAGE_NAME  = "myregistry/${APP_NAME}:${VERSION}-${BUILD_NUMBER}"
+        IMAGE_NAME  = "purushotentitle/${APP_NAME}:${VERSION}-${BUILD_NUMBER}"
         JAVA_HOME   = tool 'JDK-17'
     }
 
