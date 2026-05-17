@@ -1,5 +1,6 @@
 package com.payment.service;
 
+import com.payment.config.PaymentMetrics;
 import com.payment.config.KafkaTopicConfig;
 import com.payment.kafka.PaymentProducer;
 import com.payment.model.Payment;
@@ -22,6 +23,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentProducer paymentProducer;
+    private final PaymentMetrics paymentMetrics;
 
     // ─────────────────────────────────────────────
     // CREATE
@@ -44,7 +46,7 @@ public class PaymentService {
                 .build();
 
         payment = paymentRepository.save(payment);
-
+        paymentMetrics.recordPaymentCreated(request.getStandard());
         PaymentDTO.Response response = toResponse(payment, "Payment created successfully");
 
         // Publish to Kafka
@@ -68,17 +70,19 @@ public class PaymentService {
         payment = paymentRepository.save(payment);
 
         // Simulate ISO 8583 vs ISO 20022 processing
-        String processingNote;
-        if (payment.getStandard() == Payment.MessageStandard.ISO_8583) {
-            processingNote = processIso8583(payment);
-        } else {
-            processingNote = processIso20022(payment);
-        }
+        Payment finalPayment = payment;
+        String processingNote = paymentMetrics.getProcessingTimer().record(() -> {
+            if (finalPayment.getStandard() == Payment.MessageStandard.ISO_8583) {
+                return processIso8583(finalPayment);
+            } else {
+                return processIso20022(finalPayment);
+            }
+        });
 
         payment.setStatus(Payment.PaymentStatus.COMPLETED);
         payment.setProcessedAt(LocalDateTime.now());
         payment = paymentRepository.save(payment);
-
+        paymentMetrics.recordPaymentCompleted();
         PaymentDTO.Response response = toResponse(payment, processingNote);
         paymentProducer.sendPaymentInitiated(KafkaTopicConfig.TOPIC_PAYMENT_PROCESSED, response);
 
@@ -119,7 +123,7 @@ public class PaymentService {
 
         payment.setStatus(Payment.PaymentStatus.REVERSED);
         payment = paymentRepository.save(payment);
-
+        paymentMetrics.recordPaymentReversed();
         PaymentDTO.Response response = toResponse(payment, "Payment reversed");
         paymentProducer.sendPaymentInitiated(KafkaTopicConfig.TOPIC_PAYMENT_FAILED, response);
 
