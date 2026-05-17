@@ -5,6 +5,9 @@ spring:
   application:
     name: payment-service
 
+mvc:
+  pathmatch:
+    matching-strategy: ant_path_matcher
   # ── H2 In-Memory Database (local dev) ──────────────────
   datasource:
     url: jdbc:h2:mem:paymentdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
@@ -18,6 +21,7 @@ h2:
     path: /h2-console
     settings:
       web-allow-others: true
+      trace: false
 
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
