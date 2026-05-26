@@ -1,4 +1,3 @@
-Here is your content **formatted and cleaned up for readability**.
 
 # PAYMENT APP — COMPLETE STARTUP GUIDE
 
